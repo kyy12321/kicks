@@ -256,7 +256,7 @@ function calculateFinalPrice($price, $discountType, $discountValue) {
                 <i class="fas fa-user"></i>
                 Sign In
             </a>
-            <a href="cart.html" class="nav-btn btn-register">
+            <a href="cart.php" class="nav-btn btn-register">
                 <i class="fas fa-shopping-cart"></i>
                 Cart (0)
             </a>
