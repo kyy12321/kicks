@@ -248,7 +248,7 @@ function calculateFinalPrice($price, $discountType, $discountValue) {
             <a href="#" class="mobile-nav-link"><i class="fas fa-home"></i> Home</a>
             <a href="ecomm.php" class="mobile-nav-link"><i class="fas fa-store"></i> Shop</a>
             <a href="#featured-products" class="mobile-nav-link"><i class="fas fa-tshirt"></i> Products</a>
-            <a href="#" class="mobile-nav-link"><i class="fas fa-info-circle"></i> About</a>
+            <a href="./zpages/about_us.php" class="mobile-nav-link"><i class="fas fa-info-circle"></i> About</a>
             <a href="#" class="mobile-nav-link"><i class="fas fa-envelope"></i> Contact</a>
         </div>
         <div class="mobile-nav-buttons">
