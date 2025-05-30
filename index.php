@@ -252,7 +252,7 @@ function calculateFinalPrice($price, $discountType, $discountValue) {
             <a href="#" class="mobile-nav-link"><i class="fas fa-envelope"></i> Contact</a>
         </div>
         <div class="mobile-nav-buttons">
-            <a href="login.html" class="nav-btn btn-signin">
+            <a href="./auth/login.php" class="nav-btn btn-signin">
                 <i class="fas fa-user"></i>
                 Sign In
             </a>
