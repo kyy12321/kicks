@@ -1,0 +1,2 @@
+ALTER TABLE products
+ADD COLUMN stock INT NOT NULL DEFAULT 0 AFTER discount_value;

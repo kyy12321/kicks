@@ -1493,10 +1493,10 @@
             </div>
         </a>
         <div class="nav-links">
-            <a href="index.php" class="nav-link">Home</a>
+            <a href="#" class="nav-link">Home</a>
             <a href="#" class="nav-link">Shop</a>
-            <a href="#" class="nav-link">Products</a>
-            <a href="zpages/about_us.php" class="nav-link">About</a>
+            <a href="#" class="nav-link">Categories</a>
+            <a href="#" class="nav-link">About</a>
             <a href="#" class="nav-link">Contact</a>
         </div>
         <div class="nav-buttons">
@@ -1529,7 +1529,7 @@
                         <i class="fas fa-cog"></i>
                         <span>Settings</span>
                     </a>
-                    <a href="../../login.php" class="dropdown-item">
+                    <a href="../logout.php" class="dropdown-item">
                         <i class="fas fa-sign-out-alt"></i>
                         <span>Logout</span>
                     </a>
@@ -1831,43 +1831,43 @@
         const products = [
             {
                 id: 1,
-                name: "Samba",
+                name: "Nike Air Max 270",
                 price: 150,
-                image: "uploads/adi.jpg",
-                category: "Casual",
-                brand: "Adidas",
+                image: "https://static.nike.com/a/images/c_limit,w_592,f_auto/t_product_v1/i1-665455a5-45de-40fb-945f-c1852b82400d/air-max-270-mens-shoes-KkLcGR.png",
+                category: "Running",
+                brand: "Nike",
                 sizes: [7, 8, 9, 10, 11],
                 rating: 4.5,
-                description: "The Adidas Samba Max 270 delivers a plush ride with a super-soft, lightweight foam midsole and a Max Air unit in the heel for responsive cushioning."
+                description: "The Nike Air Max 270 delivers a plush ride with a super-soft, lightweight foam midsole and a Max Air unit in the heel for responsive cushioning."
             },       
 // Sample product data (continuation)
 {
     id: 2,
-    name: "Asics U21",
+    name: "Adidas Ultraboost 21",
     price: 180,
-    image: "uploads/bluaci.jpg",
+    image: "https://assets.adidas.com/images/h_840,f_auto,q_auto,fl_lossy,c_fill,g_auto/fbaf991a78bc4896a3e9ad7800abcec6_9366/Ultraboost_22_Shoes_Black_GZ0127_01_standard.jpg",
     category: "Running",
-    brand: "Asics",
+    brand: "Adidas",
     sizes: [8, 9, 10, 11, 12],
     rating: 4.8,
-    description: "The Asics Ultraboost 21 features a Boost midsole for incredible energy return and a Primeknit+ upper that adapts to the shape of your foot for a comfortable fit."
+    description: "The Adidas Ultraboost 21 features a Boost midsole for incredible energy return and a Primeknit+ upper that adapts to the shape of your foot for a comfortable fit."
 },
 {
     id: 3,
-    name: "Puma Speedcat",
+    name: "Puma RS-X³",
     price: 110,
-    image: "uploads/puma.jpg",
+    image: "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_600,h_600/global/373308/04/sv01/fnd/PNA/fmt/png/RS-X%C2%B3-Puzzle-Men's-Sneakers",
     category: "Casual",
     brand: "Puma",
     sizes: [7, 8, 9, 10],
     rating: 4.2,
-    description: "The Puma Speedcat features bold design elements and a chunky silhouette with RS technology for cushioning and support."
+    description: "The Puma RS-X³ features bold design elements and a chunky silhouette with RS technology for cushioning and support."
 },
 {
     id: 4,
-    name: "Lowcut",
+    name: "New Balance 990v5",
     price: 175,
-    image: "uploads/lowcut.jpg",
+    image: "https://nb.scene7.com/is/image/NB/m990gl5_nb_02_i?$pdpflexf2$&wid=440&hei=440",
     category: "Running",
     brand: "New Balance",
     sizes: [8, 9, 10, 11, 12, 13],
@@ -1876,9 +1876,9 @@
 },
 {
     id: 6,
-    name: "New Balance 1906r",
+    name: "Adidas Predator Freak",
     price: 230,
-    image: "uploads/nbb.jpg",
+    image: "https://assets.adidas.com/images/h_840,f_auto,q_auto,fl_lossy,c_fill,g_auto/0e540bae86f24661b855ac8a00f45d3e_9366/Predator_Freak.1_Firm_Ground_Cleats_Black_FY1026_01_standard.jpg",
     category: "Soccer",
     brand: "Adidas",
     sizes: [7, 8, 9, 10, 11],
@@ -1887,10 +1887,10 @@
 },
 {
     id: 7,
-    name: "New Balance Classic",
+    name: "Salomon X Ultra 3",
     price: 150,
-    image: "uploads/xx.jpg",
-    category: "Casual",
+    image: "https://www.salomon.com/sites/default/files/products-images/L40467400_8db8f8d5d4.jpg",
+    category: "Hiking",
     brand: "Salomon",
     sizes: [7, 8, 9, 10, 11, 12],
     rating: 4.5,
@@ -1898,11 +1898,11 @@
 },
 {
     id: 8,
-    name: "Vomero Roam",
+    name: "Reebok Classic Leather",
     price: 80,
-    image: "uploads/nikevmROAM.png",
+    image: "https://assets.reebok.com/images/h_840,f_auto,q_auto:sensitive,fl_lossy,c_fill,g_auto/e21e6ce4dc7c43c9a0bfac6800a9c0e6_9366/Classic_Leather_Shoes_White_49799_01_standard.jpg",
     category: "Casual",
-    brand: "Nike",
+    brand: "Reebok",
     sizes: [7, 8, 9, 10, 11, 12],
     rating: 4.3,
     description: "The Reebok Classic Leather features a soft leather upper and a die-cut EVA midsole for lightweight cushioning and comfort."

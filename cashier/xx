@@ -1,0 +1,656 @@
+<?php
+session_start();
+include '../includes/auth.php';
+include '../includes/db_connect.php';
+
+// Redirect if not logged in as customer
+if (!isLoggedIn() || $_SESSION['role'] !== 'customer') {
+    header("Location: ../auth/login.php");
+    exit();
+}
+
+$customerName = $_SESSION['name'] ?? 'Customer';
+
+// Get categories for filter
+$categoriesQuery = "SELECT DISTINCT category FROM products WHERE stock > 0";
+$categoriesResult = $conn->query($categoriesQuery);
+$categories = [];
+if ($categoriesResult) {
+    while ($row = $categoriesResult->fetch_assoc()) {
+        $categories[] = $row['category'];
+    }
+}
+
+// Handle category filter
+$categoryFilter = '';
+if (isset($_GET['category']) && $_GET['category'] !== 'all') {
+    $category = $conn->real_escape_string($_GET['category']);
+    $categoryFilter = " AND category = '$category'";
+}
+
+// Fetch products from database
+$productsQuery = "SELECT * FROM products WHERE stock > 0" . $categoryFilter . " ORDER BY created_at DESC";
+$productsResult = $conn->query($productsQuery);
+
+// Get cart count
+$userId = $_SESSION['user_id'];
+$cartCountQuery = "SELECT SUM(quantity) as count FROM cart WHERE user_id = $userId";
+$cartCountResult = $conn->query($cartCountQuery);
+$cartCount = 0;
+if ($cartCountResult && $row = $cartCountResult->fetch_assoc()) {
+    $cartCount = $row['count'] ?: 0;
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="KICKS - Your premier destination for sneakers and footwear">
+    <title>KICKS | Premium Footwear Store</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="../assets/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+    <!-- Toast Notification Container -->
+    <div class="toast-container"></div>
+
+    <!-- Header -->
+    <header class="navbar">
+        <a href="index.php" class="nav-logo">
+            <span class="nav-logo-text">KICKS</span>
+        </a>
+        
+        <button class="mobile-menu-toggle" aria-label="Toggle menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <nav class="nav-menu">
+            <a href="index.php" class="nav-link active">
+                <i class="fas fa-home"></i> Home
+            </a>
+            <a href="#" class="nav-link">
+                <i class="fas fa-fire"></i> New Arrivals
+            </a>
+            <a href="#" class="nav-link">
+                <i class="fas fa-tag"></i> Deals
+            </a>
+            <a href="cart.php" class="nav-link cart-link">
+                <i class="fas fa-shopping-cart"></i> Cart
+                <span class="cart-count" id="cart-count"><?php echo $cartCount; ?></span>
+            </a>
+        </nav>
+        
+        <div class="user-profile" id="userProfile">
+            <div class="user-avatar">
+                <?php echo htmlspecialchars(substr($customerName, 0, 1)); ?>
+            </div>
+            <span class="user-name"><?php echo htmlspecialchars($customerName); ?></span>
+            <i class="fas fa-chevron-down"></i>
+            
+            <div class="dropdown-menu" id="userDropdown">
+                <div class="dropdown-menu-header">
+                    <div class="user-avatar">
+                        <?php echo htmlspecialchars(substr($customerName, 0, 1)); ?>
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name"><?php echo htmlspecialchars($customerName); ?></div>
+                        <div class="user-role">Customer</div>
+                    </div>
+                </div>
+                <div class="dropdown-menu-links">
+                    <a href="profile.php">
+                        <i class="fas fa-user-circle"></i> My Profile
+                    </a>
+                    <a href="orders.php">
+                        <i class="fas fa-clipboard-list"></i> My Orders
+                    </a>
+                    <a href="wishlist.php">
+                        <i class="fas fa-heart"></i> Wishlist
+                    </a>
+                    <a href="../auth/logout.php" class="logout">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Hero Banner -->
+        <section class="hero-section">
+            <div class="hero-content fade-in">
+                <h1 class="hero-title">Step into Excellence</h1>
+                <p class="hero-description">Discover our premium collection of sneakers and footwear from top brands around the world.</p>
+                <a href="#featured-products" class="hero-cta">Shop Now</a>
+            </div>
+        </section>
+        
+        <!-- Category Filter -->
+        <div class="category-filter slide-in">
+            <a href="index.php" class="category-btn <?php echo !isset($_GET['category']) ? 'active' : ''; ?>">All Products</a>
+            <?php foreach ($categories as $category): ?>
+                <a href="?category=<?php echo urlencode($category); ?>" 
+                   class="category-btn <?php echo (isset($_GET['category']) && $_GET['category'] === $category) ? 'active' : ''; ?>">
+                    <?php echo htmlspecialchars($category); ?>
+                </a>
+            <?php endforeach; ?>
+        </div>
+
+        <!-- Products Section -->
+        <section class="products-section" id="featured-products">
+            <div class="products-grid" id="productsGrid">
+                <?php if ($productsResult && $productsResult->num_rows > 0): ?>
+                    <?php while($product = $productsResult->fetch_assoc()): ?>
+                        <?php 
+                            // Calculate discount percentage if applicable
+                            $hasDiscount = isset($product['original_price']) && $product['original_price'] > $product['price'];
+                            $discountPercentage = $hasDiscount ? round(100 - ($product['price'] * 100 / $product['original_price'])) : 0;
+                            
+                            // Determine if product is new (less than 14 days old)
+                            $isNew = (isset($product['created_at']) && strtotime($product['created_at']) > strtotime('-14 days'));
+                        ?>
+                        <div class="product-card">
+                            <div class="product-image">
+                                <?php if ($isNew): ?>
+                                    <div class="product-label">New</div>
+                                <?php elseif ($hasDiscount): ?>
+                                    <div class="product-label">-<?php echo $discountPercentage; ?>%</div>
+                                <?php endif; ?>
+                                
+                                <div class="product-quick-actions">
+                                    <button class="quick-action-btn btn-quick-view" data-id="<?php echo $product['id']; ?>" aria-label="Quick view">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="quick-action-btn btn-wishlist" data-id="<?php echo $product['id']; ?>" aria-label="Add to wishlist">
+                                        <i class="far fa-heart"></i>
+                                    </button>
+                                </div>
+                                
+                                <img src="<?php echo htmlspecialchars($product['image_path']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>" loading="lazy">
+                            </div>
+                            <div class="product-info">
+                                <div class="product-category"><?php echo htmlspecialchars($product['category']); ?></div>
+                                <h3 class="product-name"><?php echo htmlspecialchars($product['name']); ?></h3>
+                                <div class="product-price">
+    ₱<?php echo number_format($product['price'], 2); ?>
+    <?php if ($hasDiscount): ?>
+        <span class="original-price">₱<?php echo number_format($product['original_price'], 2); ?></span>
+        <span class="discount-badge"><?php echo $discountPercentage; ?>% OFF</span>
+    <?php endif; ?>
+</div>
+                                <div class="product-actions">
+                                    <button class="btn-view" data-id="<?php echo $product['id']; ?>">
+                                        <i class="fas fa-eye"></i> Quick View
+                                    </button>
+                                    <button class="btn-add-cart" data-id="<?php echo $product['id']; ?>">
+                                        <i class="fas fa-cart-plus"></i> Add to Cart
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <div class="empty-state">
+                        <i class="fas fa-search"></i>
+                        <h3>No products found</h3>
+                        <p>We couldn't find any products matching your criteria. Try a different category or check back later for new arrivals.</p>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </section>
+    </main>
+
+    <!-- Product Quick View Modal -->
+    <div class="modal" id="quickViewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="close" id="closeModal" aria-label="Close modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="productDetails"></div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-column">
+                    <div class="footer-logo">
+                        <span class="footer-logo-text">KICKS</span>
+                    </div>
+                    <p class="footer-description">
+                        Your premier destination for the latest and greatest in sneaker fashion. 
+                        We offer a wide selection of authentic footwear from top brands around the world.
+                    </p>
+                    <div class="footer-social">
+                        <a href="#" class="social-link" aria-label="Facebook">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="social-link" aria-label="Twitter">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="social-link" aria-label="Instagram">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="social-link" aria-label="YouTube">
+                            <i class="fab fa-youtube"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="footer-column">
+                    <h3 class="footer-title">Quick Links</h3>
+                    <ul class="footer-links">
+                        <li><a href="index.php"><i class="fas fa-chevron-right"></i> Home</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> New Arrivals</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Best Sellers</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Deals & Offers</a></li>
+                        <li><a href="cart.php"><i class="fas fa-chevron-right"></i> Cart</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h3 class="footer-title">Customer Service</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Help Center</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Track My Order</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Return Policy</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Size Guide</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Contact Us</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h3 class="footer-title">Contact Info</h3>
+                    <ul class="footer-contact">
+                        <li>
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>Danao, Cebu City, Philippines</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-phone-alt"></i>
+                            <span>+63 (930) 854-9550</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-envelope"></i>
+                            <span>support@kicks.com</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-clock"></i>
+                            <span>Mon-Fri: 9AM - 6PM</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h3 class="footer-title">Newsletter</h3>
+                    <p>Subscribe to our newsletter to get updates on our latest offers!</p>
+                    <form class="newsletter-form">
+                        <input type="email" class="newsletter-input" placeholder="Enter your email" required>
+                        <button type="submit" class="newsletter-btn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p class="footer-copyright">&copy; 2025 KICKS. All Rights Reserved. | Designed by BigByte Cartel</p>
+                <div class="footer-payments">
+                    <i class="fab fa-cc-visa payment-icon"></i>
+                    <i class="fab fa-cc-mastercard payment-icon"></i>
+                    <i class="fab fa-cc-amex payment-icon"></i>
+                    <i class="fab fa-cc-paypal payment-icon"></i>
+                    <i class="fab fa-cc-apple-pay payment-icon"></i>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Elements
+        const navbar = document.querySelector('.navbar');
+        const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
+        const navMenu = document.querySelector('.nav-menu');
+        const userProfile = document.getElementById('userProfile');
+        const userDropdown = document.getElementById('userDropdown');
+        const modal = document.getElementById('quickViewModal');
+        const closeModal = document.getElementById('closeModal');
+        const toastContainer = document.querySelector('.toast-container');
+        const cartCountElement = document.getElementById('cart-count');
+        
+        // Show/Hide mobile menu
+        mobileMenuToggle.addEventListener('click', function() {
+            navMenu.classList.toggle('active');
+            this.innerHTML = navMenu.classList.contains('active') 
+                ? '<i class="fas fa-times"></i>' 
+                : '<i class="fas fa-bars"></i>';
+        });
+        
+        // Show/Hide user dropdown
+        userProfile.addEventListener('click', function(e) {
+            e.stopPropagation();
+            userDropdown.classList.toggle('active');
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function() {
+            userDropdown.classList.remove('active');
+        });
+        
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+        
+        // Create toast notification
+        function createToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icon = type === 'success' 
+                ? '<i class="fas fa-check-circle toast-icon"></i>' 
+                : '<i class="fas fa-exclamation-circle toast-icon"></i>';
+            
+            toast.innerHTML = `
+                ${icon}
+                <div class="toast-content">
+                    <p class="toast-message">${message}</p>
+                </div>
+                <button class="toast-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Show toast
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            // Auto dismiss after 3 seconds
+            const dismissTimeout = setTimeout(() => {
+                dismissToast(toast);
+            }, 3000);
+            
+            // Close button
+            toast.querySelector('.toast-close').addEventListener('click', () => {
+                clearTimeout(dismissTimeout);
+                dismissToast(toast);
+            });
+            
+            return toast;
+        }
+        
+        // Dismiss toast notification
+        function dismissToast(toast) {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }
+        
+        // Update cart count with animation
+        function updateCartCount(count) {
+            cartCountElement.textContent = count;
+            cartCountElement.classList.add('cart-pulse');
+            setTimeout(() => {
+                cartCountElement.classList.remove('cart-pulse');
+            }, 500);
+        }
+        
+        // Add to Cart functionality
+        document.querySelectorAll('.btn-add-cart').forEach(button => {
+            button.addEventListener('click', function() {
+                const productId = this.dataset.id;
+                const originalText = this.innerHTML;
+                
+                // Show loading state
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+                this.disabled = true;
+                
+                fetch('add-to-cart.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `product_id=${productId}&quantity=1`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Reset button state
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                    
+                    if (data.success) {
+                        updateCartCount(data.cartCount);
+                        createToast('Product added to your cart!');
+                    } else {
+                        createToast(data.message || 'Failed to add product to cart', 'error');
+                    }
+                })
+                .catch(error => {
+                    // Reset button state
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                    createToast('An error occurred. Please try again.', 'error');
+                });
+            });
+        });
+        
+        // Quick View functionality
+        document.querySelectorAll('.btn-view, .btn-quick-view').forEach(button => {
+            button.addEventListener('click', function() {
+                const productId = this.dataset.id;
+                
+                // Show loading state for btn-view
+                if (this.classList.contains('btn-view')) {
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+                    this.disabled = true;
+                    
+                    // Reset after a delay
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                        this.disabled = false;
+                    }, 1000);
+                }
+                
+                fetch(`get_product.php?id=${productId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            showProductModal(data.product);
+                        } else {
+                            createToast(data.message || 'Failed to load product details', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        createToast('An error occurred. Please try again.', 'error');
+                    });
+            });
+        });
+        
+        // Wishlist functionality
+        document.querySelectorAll('.btn-wishlist').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const productId = this.dataset.id;
+                
+                // Toggle heart icon
+                const icon = this.querySelector('i');
+                const isInWishlist = icon.classList.contains('fas');
+                
+                if (isInWishlist) {
+                    icon.classList.replace('fas', 'far');
+                    createToast('Product removed from your wishlist');
+                } else {
+                    icon.classList.replace('far', 'fas');
+                    icon.style.color = '#f44336';
+                    createToast('Product added to your wishlist');
+                }
+                
+                // Here you would also send an AJAX request to update the wishlist in the database
+            });
+        });
+        
+        // Show product modal
+        function showProductModal(product) {
+            // Create product specs data
+            const specsData = [
+                { label: 'Brand', value: product.brand || product.category },
+                { label: 'Availability', value: product.stock > 0 ? 'In Stock' : 'Out of Stock' },
+                { label: 'SKU', value: `SKU-${product.id}` },
+                { label: 'Size', value: product.size || 'Multiple Sizes' }
+            ];
+            
+            const specs = specsData.map(spec => `
+                <div class="spec-item">
+                    <span class="spec-label">${spec.label}</span>
+                    <span class="spec-value">${spec.value}</span>
+                </div>
+            `).join('');
+            
+            // Calculate discount percentage if applicable
+            const hasDiscount = product.original_price && product.original_price > product.price;
+            const discountPercentage = hasDiscount ? 
+                Math.round(100 - (product.price * 100 / product.original_price)) : 0;
+            
+            // Create price HTML
+          // Create price HTML
+let priceHTML = `₱${parseFloat(product.price).toFixed(2)}`;
+if (hasDiscount) {
+    priceHTML += `
+        <span class="original-price">₱${parseFloat(product.original_price).toFixed(2)}</span>
+        <span class="discount-badge">${discountPercentage}% OFF</span>
+    `;
+}
+            
+            // Create modal content
+            const content = `
+                <div class="product-view">
+                    <div class="product-view-image">
+                        <img src="${product.image_path}" alt="${product.name}">
+                    </div>
+                    <div class="product-view-details">
+                        <div class="product-view-category">${product.category}</div>
+                        <h2 class="product-view-name">${product.name}</h2>
+                        <div class="product-view-price">${priceHTML}</div>
+                        <p class="product-view-description">
+                            ${product.description || 'No description available for this product. Please check back later for updates.'}
+                        </p>
+                        <div class="product-specs">${specs}</div>
+                        <div class="quantity-control">
+                            <span class="quantity-label">Quantity:</span>
+                            <div class="quantity-buttons">
+                                <button class="quantity-btn minus" aria-label="Decrease quantity">-</button>
+                                <input type="number" class="quantity-input" id="productQuantity" value="1" min="1" max="${product.stock}">
+                                <button class="quantity-btn plus" aria-label="Increase quantity">+</button>
+                            </div>
+                        </div>
+                        <div class="product-view-actions">
+                            <button class="btn-add-cart-modal" data-id="${product.id}">
+                                <i class="fas fa-cart-plus"></i> Add to Cart
+                            </button>
+                            <button class="btn-wishlist" data-id="${product.id}" aria-label="Add to wishlist">
+                                <i class="far fa-heart"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Set content and show modal
+            document.getElementById('productDetails').innerHTML = content;
+            modal.style.display = 'block';
+            modal.classList.add('show');
+            
+            // Quantity controls
+            const quantityInput = document.getElementById('productQuantity');
+            const minusBtn = document.querySelector('.quantity-btn.minus');
+            const plusBtn = document.querySelector('.quantity-btn.plus');
+            
+            minusBtn.addEventListener('click', () => {
+                if (quantityInput.value > 1) {
+                    quantityInput.value = parseInt(quantityInput.value) - 1;
+                }
+            });
+
+            plusBtn.addEventListener('click', () => {
+                if (quantityInput.value < parseInt(quantityInput.max)) {
+                    quantityInput.value = parseInt(quantityInput.value) + 1;
+                }
+            });
+
+            // Add to cart from modal
+            document.querySelector('.btn-add-cart-modal').addEventListener('click', function() {
+                const productId = this.dataset.id;
+                const quantity = quantityInput.value;
+                const originalText = this.innerHTML;
+
+                // Show loading state
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+                this.disabled = true;
+
+                fetch('add-to-cart.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `product_id=${productId}&quantity=${quantity}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Reset button state
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+
+                    if (data.success) {
+                        updateCartCount(data.cartCount);
+                        createToast(`${quantity} item(s) added to cart!`);
+                        modal.style.display = 'none';
+                    } else {
+                        createToast(data.message || 'Failed to add item to cart', 'error');
+                    }
+                })
+                .catch(error => {
+                    // Reset button state
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                    createToast('An error occurred. Please try again.', 'error');
+                });
+            });
+        }
+
+        // Close modal functionality
+        closeModal.addEventListener('click', () => {
+            modal.style.display = 'none';
+            modal.classList.remove('show');
+        });
+
+        // Close modal when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+                modal.classList.remove('show');
+            }
+        });
+    });
+    </script>
+</body>
+</html>

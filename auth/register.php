@@ -1,3 +1,4 @@
+
 <?php
 include '../includes/auth.php';
 
@@ -26,9 +27,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // If no errors, proceed with registration
     if (empty($errors) && registerUser($username, $password)) {
-        header("Location: login.php");
+        // Redirect to login.php with a success flag
+        header("Location: login.php?registered=1");
         exit();
-    } else {
+    } else if (empty($errors)) {
+        // Only show general error if registration failed but no validation errors
         $errors['general'] = "Registration failed. Please try again.";
     }
 }
@@ -117,22 +120,37 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         .container {
-            display: flex;
             width: 100%;
-            max-width: 1200px;
+            max-width: 1000px;
             border-radius: var(--border-radius-lg);
             overflow: hidden;
             box-shadow: var(--shadow-md);
             position: relative;
             z-index: 1;
+            background-color: var(--background-card);
         }
 
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(to right, var(--primary-color), var(--primary-dark));
+            z-index: 2;
+        }
+
+        /* Image Side */
         .image-side {
             width: 40%;
+            height: 100%;
             background: url('https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1587&q=80') center/cover;
-            position: relative;
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
             overflow: hidden;
-            box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.5);
         }
 
         .image-overlay {
@@ -154,7 +172,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             line-height: 1.2;
             margin-bottom: 10px;
             text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            font-family: 'Poppins', sans-serif;
+            color: var(--text-light);
         }
 
         .image-subtext {
@@ -162,15 +180,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             opacity: 0.9;
             margin-bottom: 20px;
             text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            color: var(--text-muted);
         }
 
+        /* Content Side */
         .content-side {
             width: 60%;
-            background-color: var(--background-card);
             padding: 50px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: var(--shadow-sm);
+            margin-left: 40%;
         }
 
         .back-link {
@@ -201,14 +218,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             -webkit-text-fill-color: transparent;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             font-family: 'Poppins', sans-serif;
         }
 
         .logo i {
             font-size: 32px;
             color: var(--primary-color);
-            filter: drop-shadow(0 0 2px rgba(76, 175, 80, 0.3));
         }
 
         .form-title {
@@ -225,16 +241,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         .form-label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             font-size: 14px;
             color: var(--text-light);
             font-weight: 500;
-            transition: all var(--transition-speed) ease;
         }
 
         .form-control {
             width: 100%;
-            padding: 15px;
+            padding: 16px;
             padding-left: 45px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: var(--border-radius-sm);
@@ -361,20 +376,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         /* Responsive Design */
         @media (max-width: 768px) {
             .container {
-                flex-direction: column;
                 max-width: 500px;
             }
 
-            .image-side, .content-side {
-                width: 100%;
-            }
-
             .image-side {
+                width: 100%;
                 height: 200px;
+                position: relative;
             }
 
             .content-side {
+                width: 100%;
                 padding: 30px;
+                margin-left: 0;
+                margin-top: 200px;
             }
         }
     </style>
@@ -394,6 +409,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
             <h1 class="form-title">Create Your Account</h1>
             
+            <?php if (isset($errors["general"])): ?>
+                <div class="error-message"><?php echo $errors["general"]; ?></div>
+            <?php endif; ?>
+
             <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
                 <div class="form-group">
                     <label class="form-label" for="username">Username</label>

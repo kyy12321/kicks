@@ -19,21 +19,34 @@ function registerUser($username, $password, $role = 'customer') {
     }
 }
 
+// Add this function to get current user data
+function getCurrentUser() {
+    if (!isset($_SESSION['user_id'])) return null;
+    
+    global $conn;
+    $stmt = $conn->prepare("SELECT id, username, role FROM users WHERE id = ?");
+    $stmt->bind_param("i", $_SESSION['user_id']);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    return $result->fetch_assoc();
+}
+
+
 // Function to login a user
 function loginUser($username, $password) {
     global $conn;
-    $stmt = $conn->prepare("SELECT id, password, role FROM users WHERE username = ?");
+    $stmt = $conn->prepare("SELECT id, username, password, role FROM users WHERE username = ?");
     $stmt->bind_param("s", $username);
     $stmt->execute();
-    $stmt->store_result();
+    $result = $stmt->get_result();
     
-    if ($stmt->num_rows > 0) {
-        $stmt->bind_result($id, $hashedPassword, $role);
-        $stmt->fetch();
-        
-        if (password_verify($password, $hashedPassword)) {
-            $_SESSION['user_id'] = $id;
-            $_SESSION['role'] = $role;
+    if ($result->num_rows === 1) {
+        $user = $result->fetch_assoc();
+        if (password_verify($password, $user['password'])) {
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['username'] = $user['username']; // Store username in session
+            $_SESSION['role'] = $user['role'];
             return true;
         }
     }

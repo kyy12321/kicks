@@ -1,8 +1,15 @@
+
 <?php
 session_start();
 include '../includes/auth.php';
 
 $error_message = '';
+$success_message = '';
+
+// Show success message if redirected from registration
+if (isset($_GET['registered']) && $_GET['registered'] == 1) {
+    $success_message = "Account created successfully! You may now log in.";
+}
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = $_POST['username'];
@@ -11,13 +18,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (loginUser($username, $password)) {
         // Redirect based on the user's role
         if ($_SESSION['role'] === 'admin') {
-            header("Location: ../admin/dashboard.php");
+            header("Location: ../dashboard/admin_dashboard.php");
         } elseif ($_SESSION['role'] === 'cashier') {
             header("Location: ../cashier/dashboard.php");
         } elseif ($_SESSION['role'] === 'superadmin') {
-            header("Location: ../superadmin/dashboard.php");
+            header("Location: ../adminS/dashboard.php");
         } elseif ($_SESSION['role'] === 'customer') {
-            header("Location: ../ecomm.php");
+            header("Location: ../index.php");
         } else {
             header("Location: ../dashboard/index.php");
         }
@@ -112,7 +119,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         .container {
-            display: flex;
             width: 100%;
             max-width: 1000px;
             border-radius: var(--border-radius-lg);
@@ -120,6 +126,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             box-shadow: var(--shadow-md);
             position: relative;
             z-index: 1;
+            background-color: var(--background-card);
         }
 
         .container::before {
@@ -136,8 +143,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         /* Image Side */
         .image-side {
             width: 40%;
+            height: 100%;
             background: url('https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1587&q=80') center/cover;
-            position: relative;
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
             overflow: hidden;
         }
 
@@ -174,10 +185,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         /* Content Side */
         .content-side {
             width: 60%;
-            background-color: var(--background-card);
             padding: 50px;
-            display: flex;
-            flex-direction: column;
+            margin-left: 40%;
         }
 
         .back-link {
@@ -280,6 +289,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         .error-message i {
+            font-size: 16px;
+        }
+
+        .success-message {
+            color: var(--primary-color);
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .success-message i {
             font-size: 16px;
         }
 
@@ -457,20 +480,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         /* Responsive Design */
         @media (max-width: 768px) {
             .container {
-                flex-direction: column;
                 max-width: 500px;
             }
 
-            .image-side, .content-side {
-                width: 100%;
-            }
-
             .image-side {
+                width: 100%;
                 height: 200px;
+                position: relative;
             }
 
             .content-side {
+                width: 100%;
                 padding: 30px;
+                margin-left: 0;
+                margin-top: 200px;
             }
 
             .social-login {
@@ -493,6 +516,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <i class="fas fa-shoe-prints"></i> KICKS
             </div>
             <h1 class="form-title">Sign In to Your Account</h1>
+            
+            <?php if (!empty($success_message)): ?>
+                <div class="success-message">
+                    <i class="fas fa-check-circle"></i>
+                    <?php echo $success_message; ?>
+                </div>
+            <?php endif; ?>
             
             <?php if (!empty($error_message)): ?>
                 <div class="error-message">
